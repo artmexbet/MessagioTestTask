@@ -1,0 +1,7 @@
+router:
+  host: ""
+  port: 8080
+kafka:
+  host: "broker"
+  port: 9092
+service:
