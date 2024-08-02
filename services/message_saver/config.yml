@@ -1,0 +1,11 @@
+kafka:
+  host: "broker"
+  port: 9092
+consumer:
+  listeningTopic: "add_message"
+db:
+  host: "db"
+  port: 5432
+  user: "baseuser"
+  password: "basepassword"
+  dbName: "testtask"

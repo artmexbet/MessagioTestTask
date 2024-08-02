@@ -5,7 +5,7 @@ import "encoding/json"
 // AddMessageJSON ...
 type AddMessageJSON struct {
 	Title string          `json:"title"`
-	Data  json.RawMessage `json:"data"`
+	Data  json.RawMessage `json:"data,omitempty"`
 }
 
 // Message ...

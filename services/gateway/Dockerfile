@@ -8,5 +8,5 @@ FROM alpine:latest
 
 WORKDIR /app
 COPY --from=builder /app/router .
-COPY ./config.yml .
+COPY ./services/gateway/config.yml .
 CMD ["./router"]

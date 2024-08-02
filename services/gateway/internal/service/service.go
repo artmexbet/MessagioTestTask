@@ -1,7 +1,7 @@
 package service
 
 import (
-	"MessagioTestTask/pkg/kafkaConnector"
+	"MessagioTestTask/pkg/kafkaConnection"
 	"MessagioTestTask/pkg/models"
 	"encoding/json"
 	"github.com/go-chi/chi/v5/middleware"
@@ -18,11 +18,11 @@ type Config struct {
 type Service struct {
 	cfg       *Config
 	validator *validator.Validate
-	queue     kafkaConnector.IQueue
+	queue     *kafkaConnection.Kafka
 }
 
 // New ...
-func New(cfg *Config, queue kafkaConnector.IQueue) (*Service, error) {
+func New(cfg *Config, queue *kafkaConnection.Kafka) (*Service, error) {
 	s := &Service{
 		cfg:       cfg,
 		queue:     queue,

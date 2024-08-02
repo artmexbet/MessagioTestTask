@@ -6,9 +6,10 @@ services:
       POSTGRES_USER: baseuser
       POSTGRES_PASSWORD: basepassword
     ports:
-      - "5432:5432"
+      - "5434:5432"  # Проксирую на другой порт, чтобы не конфликтовал с локальным сервером
     volumes:
       - ./db_data:/var/lib/postgresql/data
+      - ./db_init:/docker-entrypoint-initdb.d
     networks:
       - net
 
@@ -19,13 +20,24 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - db
       - broker
+      - message_saver
+    networks:
+      - net
+
+  message_saver:
+    build:
+      dockerfile: services/message_saver/Dockerfile
+      context: .
+    restart: unless-stopped
+    depends_on:
+      - broker
+      - db
     networks:
       - net
 
   zookeeper:
-    image: confluentinc/cp-zookeeper
+    image: confluentinc/cp-zookeeper:latest
     hostname: zookeeper
     container_name: zookeeper
     ports:
@@ -37,7 +49,7 @@ services:
       - net
 
   broker:
-    image: confluentinc/cp-server:7.6.2
+    image: confluentinc/cp-server:latest
     hostname: broker
     container_name: broker
     depends_on:
@@ -46,10 +58,10 @@ services:
       - "9092:9092"
       - "9101:9101"
     environment:
-      KAFKA_BROKER_ID: 1
+      KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://:29092,PLAINTEXT_HOST://:9092
       KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
@@ -57,8 +69,6 @@ services:
       KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_JMX_PORT: 9101
-      KAFKA_JMX_HOSTNAME: localhost
       CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: broker:29092
       CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
       CONFLUENT_METRICS_ENABLE: 'true'

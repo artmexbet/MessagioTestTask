@@ -1,19 +1,20 @@
 package main
 
 import (
+	"MessagioTestTask/pkg/db"
 	"MessagioTestTask/pkg/kafkaConnection"
 	"MessagioTestTask/pkg/logger/sl"
-	"MessagioTestTask/services/gateway/internal/router"
-	"MessagioTestTask/services/gateway/internal/service"
+	"MessagioTestTask/services/message_saver/internal/consumer"
 	"github.com/ilyakaznacheev/cleanenv"
 	"log"
+	"log/slog"
 )
 
-// Config is a global service config structure
+// Config ...
 type Config struct {
-	RouterConfig  router.Config          `yaml:"router" env-prefix:"ROUTER_"`
-	KafkaConfig   kafkaConnection.Config `yaml:"kafka" env-prefix:"KAFKA_"`
-	ServiceConfig service.Config         `yaml:"service" env-prefix:"SERVICE_"`
+	KafkaConfig    kafkaConnection.Config `yaml:"kafka" env-prefix:"KAFKA_"`
+	ConsumerConfig consumer.Config        `yaml:"consumer" env-prefix:"CONSUMER_"`
+	DBConfig       db.Config              `yaml:"db" env-prefix:"DB_"`
 }
 
 // readConfig gets config from file filename
@@ -37,16 +38,15 @@ func main() {
 	if err != nil {
 		log.Fatalln(err) // Cannot connect to Kafka
 	}
-	defer k.CloseWriters()
 
-	svc, err := service.New(&cfg.ServiceConfig, k)
+	DB, err := db.New(&cfg.DBConfig)
 	if err != nil {
-		log.Fatalln(err)
+		slog.With("module", "message_saver.consumer").With("raizer", "db").Error(err.Error())
 	}
 
-	r := router.New(&cfg.RouterConfig, svc)
-	err = r.Run()
+	c := consumer.New(&cfg.ConsumerConfig, k, DB)
+	err = c.Listen()
 	if err != nil {
-		log.Fatalln(err)
+		slog.With("module", "message_saver.consumer").Error(err.Error())
 	}
 }
