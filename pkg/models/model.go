@@ -13,3 +13,7 @@ type Message struct {
 	Id string `json:"id"`
 	AddMessageJSON
 }
+
+type MsgInfo struct {
+	Id int64 `json:"id"`
+}

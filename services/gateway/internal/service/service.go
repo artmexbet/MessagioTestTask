@@ -1,7 +1,6 @@
 package service
 
 import (
-	"MessagioTestTask/pkg/kafkaConnection"
 	"MessagioTestTask/pkg/models"
 	"encoding/json"
 	"github.com/go-chi/chi/v5/middleware"
@@ -9,6 +8,10 @@ import (
 	"log/slog"
 	"net/http"
 )
+
+type IBroker interface {
+	SendMessage(message models.Message, topic string) error
+}
 
 // Config ...
 type Config struct {
@@ -18,11 +21,11 @@ type Config struct {
 type Service struct {
 	cfg       *Config
 	validator *validator.Validate
-	queue     *kafkaConnection.Kafka
+	queue     IBroker
 }
 
 // New ...
-func New(cfg *Config, queue *kafkaConnection.Kafka) (*Service, error) {
+func New(cfg *Config, queue IBroker) (*Service, error) {
 	s := &Service{
 		cfg:       cfg,
 		queue:     queue,
@@ -53,7 +56,7 @@ func (s *Service) PostMessage() http.HandlerFunc {
 		msg.Data = msgJson.Data
 		msg.Title = msgJson.Title
 
-		err := s.queue.SendEvent(msg, "add_message")
+		err := s.queue.SendMessage(msg, "add_message")
 
 		if err != nil {
 			slog.Error("Failed to write message", slog.String("error", err.Error()))

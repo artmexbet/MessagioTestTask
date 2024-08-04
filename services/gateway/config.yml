@@ -1,10 +1,7 @@
 router:
   host: ""
   port: 8080
-kafka:
+nats:
   host: "broker"
-  port: 9092
-  topics:
-    - name: "add_message"
-    - name: "get_messages"
+  port: 4222
 service:

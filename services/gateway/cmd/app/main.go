@@ -1,8 +1,8 @@
 package main
 
 import (
-	"MessagioTestTask/pkg/kafkaConnection"
 	"MessagioTestTask/pkg/logger/sl"
+	"MessagioTestTask/pkg/natsConn"
 	"MessagioTestTask/services/gateway/internal/router"
 	"MessagioTestTask/services/gateway/internal/service"
 	"github.com/ilyakaznacheev/cleanenv"
@@ -11,9 +11,10 @@ import (
 
 // Config is a global service config structure
 type Config struct {
-	RouterConfig  router.Config          `yaml:"router" env-prefix:"ROUTER_"`
-	KafkaConfig   kafkaConnection.Config `yaml:"kafka" env-prefix:"KAFKA_"`
-	ServiceConfig service.Config         `yaml:"service" env-prefix:"SERVICE_"`
+	RouterConfig router.Config `yaml:"router" env-prefix:"ROUTER_"`
+	//KafkaConfig   kafkaConnection.Config `yaml:"kafka" env-prefix:"KAFKA_"`
+	NatsConfig    natsConn.Config `yaml:"nats" env-prefix:"NATS_"`
+	ServiceConfig service.Config  `yaml:"service" env-prefix:"SERVICE_"`
 }
 
 // readConfig gets config from file filename
@@ -33,13 +34,18 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	k, err := kafkaConnection.New(&cfg.KafkaConfig)
-	if err != nil {
-		log.Fatalln(err) // Cannot connect to Kafka
-	}
-	defer k.CloseWriters()
+	//k, err := kafkaConnection.New(&cfg.KafkaConfig)
+	//if err != nil {
+	//	log.Fatalln(err) // Cannot connect to Kafka
+	//}
+	//defer k.CloseWriters()
 
-	svc, err := service.New(&cfg.ServiceConfig, k)
+	n, err := natsConn.New(&cfg.NatsConfig)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	svc, err := service.New(&cfg.ServiceConfig, n)
 	if err != nil {
 		log.Fatalln(err)
 	}

@@ -1,11 +1,12 @@
-kafka:
+nats:
   host: "broker"
-  port: 9092
+  port: 4222
 consumer:
-  listeningTopic: "add_message"
 db:
   host: "db"
   port: 5432
   user: "baseuser"
   password: "basepassword"
   dbName: "testtask"
+service:
+

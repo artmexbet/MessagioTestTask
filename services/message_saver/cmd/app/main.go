@@ -2,9 +2,11 @@ package main
 
 import (
 	"MessagioTestTask/pkg/db"
-	"MessagioTestTask/pkg/kafkaConnection"
 	"MessagioTestTask/pkg/logger/sl"
+	"MessagioTestTask/pkg/natsConn"
 	"MessagioTestTask/services/message_saver/internal/consumer"
+	"MessagioTestTask/services/message_saver/internal/service"
+	"context"
 	"github.com/ilyakaznacheev/cleanenv"
 	"log"
 	"log/slog"
@@ -12,9 +14,10 @@ import (
 
 // Config ...
 type Config struct {
-	KafkaConfig    kafkaConnection.Config `yaml:"kafka" env-prefix:"KAFKA_"`
-	ConsumerConfig consumer.Config        `yaml:"consumer" env-prefix:"CONSUMER_"`
-	DBConfig       db.Config              `yaml:"db" env-prefix:"DB_"`
+	NatsConfig     natsConn.Config `yaml:"nats" env-prefix:"NATS_"`
+	ConsumerConfig consumer.Config `yaml:"consumer" env-prefix:"CONSUMER_"`
+	ServiceConfig  service.Config  `yaml:"service" env-prefix:"SERVICE_"`
+	DBConfig       db.Config       `yaml:"db" env-prefix:"DB_"`
 }
 
 // readConfig gets config from file filename
@@ -34,9 +37,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	k, err := kafkaConnection.New(&cfg.KafkaConfig)
+	n, err := natsConn.New(&cfg.NatsConfig)
 	if err != nil {
-		log.Fatalln(err) // Cannot connect to Kafka
+		slog.With("module", "message_saver.nats").Error(err.Error())
 	}
 
 	DB, err := db.New(&cfg.DBConfig)
@@ -44,8 +47,11 @@ func main() {
 		slog.With("module", "message_saver.consumer").With("raizer", "db").Error(err.Error())
 	}
 
-	c := consumer.New(&cfg.ConsumerConfig, k, DB)
-	err = c.Listen()
+	s, err := service.New(&cfg.ServiceConfig, DB, n)
+
+	c := consumer.New(&cfg.ConsumerConfig, n, s)
+	ctx := context.Background()
+	err = c.Listen(ctx, "add_message")
 	if err != nil {
 		slog.With("module", "message_saver.consumer").Error(err.Error())
 	}

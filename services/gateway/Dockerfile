@@ -1,7 +1,6 @@
-FROM golang:1.22-alpine3.20 AS builder
+FROM artmexbet/go-dep AS builder
 WORKDIR /app
 COPY . .
-RUN go mod download
 RUN GOOS=linux go build -a -o router ./services/gateway/cmd/app/main.go
 
 FROM alpine:latest

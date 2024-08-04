@@ -1,59 +1,48 @@
 package consumer
 
 import (
-	"MessagioTestTask/pkg/kafkaConnection"
-	"MessagioTestTask/pkg/models"
 	"context"
-	"encoding/json"
-	"fmt"
+	"github.com/nats-io/nats.go"
 )
 
-type IDatabase interface {
-	AddMessage(models.Message) (int64, error)
+// IBroker ...
+type IBroker interface {
+	CreateReader(string, nats.MsgHandler) (*nats.Subscription, error)
+}
+
+type IService interface {
+	HandleMessage() nats.MsgHandler
 }
 
 // Config ...
 type Config struct {
-	ListeningTopic string `yaml:"listeningTopic" env:"LISTENING_TOPIC" env-default:"add_message"`
 }
 
 // Consumer is a struct for consuming messages from kafka
 type Consumer struct {
-	cfg   *Config
-	queue *kafkaConnection.Kafka
-	db    IDatabase
+	cfg     *Config
+	queue   IBroker
+	service IService
 }
 
 // New initializes Consumer struct
-func New(cfg *Config, queue *kafkaConnection.Kafka, db IDatabase) *Consumer {
+func New(cfg *Config, queue IBroker, s IService) *Consumer {
 	return &Consumer{
-		cfg:   cfg,
-		queue: queue,
-		db:    db,
+		cfg:     cfg,
+		queue:   queue,
+		service: s,
 	}
 }
 
-func (c *Consumer) Listen() error {
-	reader, err := c.queue.CreateReader(c.cfg.ListeningTopic)
+func (c *Consumer) Listen(ctx context.Context, topic string) error {
+	sub, err := c.queue.CreateReader(topic, c.service.HandleMessage())
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	defer sub.Drain()
 
-	for {
-		m, err := reader.ReadMessage(context.Background())
-		if err != nil {
-			return err
-		}
-
-		var message models.Message
-		if err := json.Unmarshal(m.Value, &message); err != nil {
-			return err
-		}
-
-		fmt.Println(c, c.db)
-		if _, err := c.db.AddMessage(message); err != nil {
-			return err
-		}
+	select {
+	case <-ctx.Done():
+		return nil
 	}
 }
